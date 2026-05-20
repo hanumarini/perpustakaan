@@ -27,13 +27,6 @@ if(isset($_POST['submit'])){
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tambah Anggota - NusaBaca</title>
 
-    <a href="../laporan/" target="_blank" class="btn btn-outline-secondary btn-custom me-2">
-    <i class="fas fa-print me-2"></i> Cetak Laporan
-</a>
-
-<a href="tambah.php" class="btn btn-primary btn-custom">
-    <i class="fas fa-user-plus me-2"></i> Tamb合 Anggota
-</a>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -189,6 +182,9 @@ if(isset($_POST['submit'])){
         <a href="../pengembalian/tampil.php">
             <i class="fas fa-check-circle"></i> Pengembalian
         </a>
+
+        <a href="../laporan/index.php"><i class="fas fa-file-alt"></i> Laporan</a>
+    </nav>
     </nav>
 
     <a href="../logout.php" class="logout-btn">

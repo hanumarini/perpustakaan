@@ -192,9 +192,8 @@ if(isset($_POST['simpan'])){
         <a href="../pengembalian/tampil.php">
             <i class="fas fa-check-circle"></i> Pengembalian
         </a>
-        <a href="laporan.php" target="_blank" class="btn btn-outline-secondary btn-custom me-2">
-    <i class="fas fa-print me-2"></i> Cetak Laporan
-</a>
+       <a href="../laporan/index.php"><i class="fas fa-file-alt"></i> Laporan</a>
+    </nav>
     </nav>
 
     <a href="../logout.php" class="logout-btn">

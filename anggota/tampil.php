@@ -202,9 +202,9 @@ $total_anggota = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM anggota"));
         <a href="../pengembalian/tampil.php">
             <i class="fas fa-check-circle"></i> Pengembalian
         </a>
-        <a href="../laporan/index.php">
-            <i class="fas fa-file-alt"></i> Laporan
-        </a>
+
+        <a href="../laporan/index.php"><i class="fas fa-file-alt"></i> Laporan</a>
+    </nav>
     </nav>
 
     <a href="../logout.php" class="logout-btn">

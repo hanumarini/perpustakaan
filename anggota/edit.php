@@ -229,6 +229,9 @@ if(isset($_POST['update'])){
         <a href="../laporan/index.php">
             <i class="fas fa-file-alt"></i> Laporan
         </a>
+
+        <a href="../laporan/index.php"><i class="fas fa-file-alt"></i> Laporan</a>
+    </nav>
     </nav>
 
     <a href="../logout.php" class="logout-btn">
