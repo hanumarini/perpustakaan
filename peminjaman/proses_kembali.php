@@ -44,9 +44,9 @@ if(isset($_GET['id'])) {
                        WHERE id = '$id'";
                        
         if(mysqli_query($conn, $sql_update)) {
-            // Berhasil, kembalikan ke halaman tampil
-            header("location:tampil.php?pesan=berhasil_kembali");
-            exit;
+           // Modifikasi baris redirect sukses di dalam file proses_kembali.php
+      header("location:../pengembalian/tampil.php?status_alert=sukses&nominal=" . $denda);
+   exit;
         } else {
             echo "Gagal memperbarui data pengembalian: " . mysqli_error($conn);
         }

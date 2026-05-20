@@ -11,16 +11,13 @@ include '../koneksi.php';
 $cari = isset($_GET['cari']) ? $_GET['cari'] : '';
 $cari_safe = mysqli_real_escape_string($conn, $cari);
 
-// MODIFIKASI QUERY: Hanya mengambil data yang statusnya 'Dikembalikan'
 $data = mysqli_query($conn, "SELECT * FROM peminjaman
 WHERE (status='Dikembalikan') 
 AND (nama_peminjam LIKE '%$cari_safe%' OR judul_buku LIKE '%$cari_safe%') 
 ORDER BY tanggal_kembali DESC, id DESC");
 
-// Statistik khusus halaman pengembalian
 $total_kembali = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjaman WHERE status='Dikembalikan'"));
 
-// Hitung total kas denda yang terkumpul
 $sum_denda = mysqli_query($conn, "SELECT SUM(denda) AS total_kas FROM peminjaman WHERE status='Dikembalikan'");
 $row_denda = mysqli_fetch_assoc($sum_denda);
 $total_kas_denda = $row_denda['total_kas'] ?? 0;
@@ -36,6 +33,9 @@ $total_kas_denda = $row_denda['total_kas'] ?? 0;
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; margin: 0; color: #334155; }
@@ -130,13 +130,7 @@ $total_kas_denda = $row_denda['total_kas'] ?? 0;
                         <td class="fw-semibold text-dark"><?= htmlspecialchars($d['nama_peminjam']) ?></td>
                         <td><i class="fas fa-book me-2 text-muted"></i><?= htmlspecialchars($d['judul_buku']) ?></td>
                         <td><?= date('d/m/Y', strtotime($d['tanggal_pinjam'])) ?></td>
-                        
-                        <td>
-                            <span class="text-success fw-medium">
-                                <i class="fas fa-calendar-check me-1"></i> <?= date('d/m/Y', strtotime($d['tanggal_kembali'])) ?>
-                            </span>
-                        </td>
-
+                        <td><span class="text-success fw-medium"><i class="fas fa-calendar-check me-1"></i> <?= date('d/m/Y', strtotime($d['tanggal_kembali'])) ?></span></td>
                         <td>
                             <?php if(isset($d['denda']) && $d['denda'] > 0) { ?>
                                 <span class="badge bg-danger text-white px-2 py-1 rounded-3 fw-bold">
@@ -148,37 +142,79 @@ $total_kas_denda = $row_denda['total_kas'] ?? 0;
                                 </span>
                             <?php } ?>
                         </td>
-
-                        <td>
-                            <span class="badge bg-success badge-status">
-                                <i class="fas fa-check-circle me-1"></i> Arsip Selesai
-                            </span>
-                        </td>
-                        
+                        <td><span class="badge bg-success badge-status"><i class="fas fa-check-circle me-1"></i> Arsip Selesai</span></td>
                         <td class="text-center">
-                            <a href="../peminjaman/hapus.php?id=<?= $d['id'] ?>" class="btn btn-sm btn-outline-danger" style="border-radius: 8px; padding: 4px 10px;" onclick="return confirm('Hapus permanen arsip riwayat ini?')" title="Hapus Riwayat">
-                                <i class="fas fa-trash"></i>
-                            </a>
+                            <a href="../peminjaman/hapus.php?id=<?= $d['id'] ?>" class="btn btn-sm btn-outline-danger btn-hapus" style="border-radius: 8px; padding: 4px 10px;"><i class="fas fa-trash"></i></a>
                         </td>
                     </tr>
                     <?php } 
                     } else { ?>
-                        <tr>
-                            <td colspan="8" class="text-center py-4 text-muted">
-                                <i class="fas fa-folder-open me-1"></i> Belum ada rekaman riwayat pengembalian buku.
-                            </td>
-                        </tr>
+                        <tr><td colspan="8" class="text-center py-4 text-muted"><i class="fas fa-folder-open me-1"></i> Belum ada rekaman riwayat pengembalian buku.</td></tr>
                     <?php } ?>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <div class="footer text-center">
-        &copy; <?= date('Y') ?> <b>NusaBaca</b> • Pusat Log Pengembalian & Denda
-    </div>
+    <div class="footer text-center">&copy; <?= date('Y') ?> <b>NusaBaca</b> • Pusat Log Pengembalian & Denda</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // 1. Notifikasi Pop-up Pengembalian Sukses Beserta Informasi Denda
+    if(urlParams.get('status_alert') === 'sukses') {
+        const nominalDenda = parseInt(urlParams.get('nominal')) || 0;
+        
+        let titleText = 'Pengembalian Sukses!';
+        let messageText = 'Buku telah berhasil dikembalikan ke dalam arsip.';
+        let iconType = 'success';
+        
+        // Jika ada denda, buat peringatan pop-up bernuansa orange/warning agar pustakawan menagih denda
+        if(nominalDenda > 0) {
+            titleText = 'Buku Kembali (Ada Denda!)';
+            messageText = 'Harap tagih denda keterlambatan sebesar: Rp ' + nominalDenda.toLocaleString('id-ID');
+            iconType = 'warning';
+        }
+
+        Swal.fire({
+            title: titleText,
+            text: messageText,
+            icon: iconType,
+            confirmButtonColor: '#4f46e5',
+            background: '#ffffff',
+            customClass: { popup: 'rounded-4' }
+        }).then(() => {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        });
+    }
+
+    // 2. Intersepsi Tombol Hapus Riwayat Beranimasi
+    document.querySelectorAll('.btn-hapus').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const href = this.getAttribute('href');
+            
+            Swal.fire({
+                title: 'Hapus Arsip?',
+                text: "Data riwayat ini akan dihapus secara permanen dari database!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal',
+                background: '#ffffff',
+                customClass: { popup: 'rounded-4' }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = href;
+                }
+            });
+        });
+    });
+</script>
 </body>
 </html>

@@ -56,8 +56,8 @@ if(isset($_POST['update'])){
         WHERE NO='$NO'");
 
     if($update_query){
-        header("location:tampil.php");
-        exit;
+       header("location:tampil.php?pesan=berhasil_update");
+exit;
     } else {
         echo "Gagal memperbarui data: " . mysqli_error($conn);
         exit;

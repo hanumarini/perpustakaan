@@ -2,8 +2,8 @@
 session_start();
 
 if(!isset($_SESSION['username'])){
-    header("location:../login.php");
-    exit;
+   header("location:tampil.php?pesan=berhasil_tambah");
+exit;
 }
 
 include '../koneksi.php';
@@ -221,6 +221,8 @@ if(isset($_POST['submit'])){
                     <i class="fas fa-save me-2"></i> Simpan Data Anggota
                 </button>
                 <a href="tampil.php" class="btn btn-light btn-custom">Batal</a>
+
+                
             </div>
         </form>
     </div>

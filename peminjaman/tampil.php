@@ -11,13 +11,11 @@ include '../koneksi.php';
 $cari = isset($_GET['cari']) ? $_GET['cari'] : '';
 $cari_safe = mysqli_real_escape_string($conn, $cari);
 
-// MODIFIKASI QUERY: Hanya mengambil data yang statusnya 'Dipinjam'
 $data = mysqli_query($conn, "SELECT * FROM peminjaman
 WHERE (status='Dipinjam') 
 AND (nama_peminjam LIKE '%$cari_safe%' OR judul_buku LIKE '%$cari_safe%') 
 ORDER BY id DESC");
 
-// Statistik ringkas untuk monitoring
 $total_peminjaman = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjaman"));
 $total_dipinjam = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjaman WHERE status='Dipinjam'"));
 ?>
@@ -32,6 +30,9 @@ $total_dipinjam = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjaman 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; margin: 0; color: #334155; }
@@ -51,7 +52,6 @@ $total_dipinjam = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjaman 
     .search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
     .table thead th { background-color: #f8fafc; color: #64748b; font-weight: 600; font-size: 11px; text-transform: uppercase; padding: 15px; border-bottom: 2px solid #f1f5f9; }
     .table tbody td { padding: 15px; vertical-align: middle; font-size: 14px; border-bottom: 1px solid #f1f5f9; }
-    .badge-status { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; }
     .btn-custom { border-radius: 10px; font-weight: 600; }
     .footer { margin-top: 40px; color: #94a3b8; font-size: 14px; }
 </style>
@@ -121,12 +121,9 @@ $total_dipinjam = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjaman 
                     $no = 1;
                     if(mysqli_num_rows($data) > 0) {
                         while($d = mysqli_fetch_array($data)){ 
-                            // Hitung status keterlambatan secara real-time untuk warning pustakawan
                             $tgl_pinjam = new DateTime($d['tanggal_pinjam']);
                             $hari_ini = new DateTime(date('Y-m-d'));
                             $durasi = $hari_ini->diff($tgl_pinjam)->days;
-                            
-                            // Batas peminjaman standar 8 hari
                             $batas_pinjam = 8;
                     ?>
                     <tr>
@@ -134,12 +131,7 @@ $total_dipinjam = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjaman 
                         <td class="fw-semibold text-primary"><?= htmlspecialchars($d['nama_peminjam']) ?></td>
                         <td><i class="fas fa-book me-2 text-muted"></i><?= htmlspecialchars($d['judul_buku']) ?></td>
                         <td><i class="far fa-calendar me-1 text-muted"></i> <?= date('d/m/Y', strtotime($d['tanggal_pinjam'])) ?></td>
-                        
-                        <td>
-                            <i class="far fa-calendar-check me-1 text-muted"></i>
-                            <?= date('d/m/Y', strtotime($d['tanggal_pinjam'] . ' + 8 days')) ?>
-                        </td>
-
+                        <td><i class="far fa-calendar-check me-1 text-muted"></i> <?= date('d/m/Y', strtotime($d['tanggal_pinjam'] . ' + ' . $batas_pinjam . ' days')) ?></td>
                         <td>
                             <?php if($durasi > $batas_pinjam) { 
                                 $lewat = $durasi - $batas_pinjam;
@@ -153,40 +145,71 @@ $total_dipinjam = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjaman 
                                 </span>
                             <?php } ?>
                         </td>
-
                         <td class="text-center">
                             <div class="d-flex justify-content-center align-items-center gap-1">
-                                <a href="proses_kembali.php?id=<?= $d['id'] ?>" class="btn btn-sm btn-success fw-bold px-3 py-1" style="border-radius: 8px; font-size:12px;" onclick="return confirm('Konfirmasi pengembalian buku ini? Sistem akan menghitung denda jika ada.')">
+                                <a href="proses_kembali.php?id=<?= $d['id'] ?>" class="btn btn-sm btn-success fw-bold px-3 py-1 btn-kembali" style="border-radius: 8px; font-size:12px;">
                                     <i class="fas fa-arrow-down me-1"></i> Kembalikan
                                 </a>
-                                
-                                <a href="edit.php?id=<?= $d['id'] ?>" class="btn btn-sm btn-outline-warning" style="border-radius: 8px; padding: 4px 8px;" title="Ubah Data">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="hapus.php?id=<?= $d['id'] ?>" class="btn btn-sm btn-outline-danger" style="border-radius: 8px; padding: 4px 8px;" onclick="return confirm('Hapus transaksi ini?')" title="Hapus">
-                                    <i class="fas fa-trash"></i>
-                                </a>
+                                <a href="edit.php?id=<?= $d['id'] ?>" class="btn btn-sm btn-outline-warning" style="border-radius: 8px; padding: 4px 8px;"><i class="fas fa-edit"></i></a>
+                                <a href="hapus.php?id=<?= $d['id'] ?>" class="btn btn-sm btn-outline-danger" style="border-radius: 8px; padding: 4px 8px;" onclick="return confirm('Hapus transaksi ini?')"><i class="fas fa-trash"></i></a>
                             </div>
                         </td>
                     </tr>
                     <?php } 
                     } else { ?>
-                        <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">
-                                <i class="fas fa-info-circle me-1"></i> Tidak ada buku yang sedang dipinjam saat ini.
-                            </td>
-                        </tr>
+                        <tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-info-circle me-1"></i> Tidak ada buku yang sedang dipinjam saat ini.</td></tr>
                     <?php } ?>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <div class="footer text-center">
-        &copy; <?= date('Y') ?> <b>NusaBaca</b> • Sistem Peminjaman Praktis
-    </div>
+    <div class="footer text-center">&copy; <?= date('Y') ?> <b>NusaBaca</b> • Sistem Peminjaman Praktis</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // 1. Intersepsi Tombol Kembalikan Beranimasi
+    document.querySelectorAll('.btn-kembali').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const href = this.getAttribute('href');
+            
+            Swal.fire({
+                title: 'Konfirmasi Pengembalian',
+                text: "Apakah buku ini benar-benar sudah dikembalikan ke perpustakaan?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Kembalikan!',
+                cancelButtonText: 'Batal',
+                background: '#ffffff',
+                customClass: { popup: 'rounded-4' }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = href;
+                }
+            });
+        });
+    });
+
+    // 2. Baca Pesan Sukses Menggunakan Parameter URL Redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    if(urlParams.get('pesan') === 'berhasil_kembali') {
+        Swal.fire({
+            title: 'Berhasil Diproses!',
+            text: 'Buku sukses dikembalikan. Silakan cek detail denda final pada halaman menu Pengembalian.',
+            icon: 'success',
+            confirmButtonColor: '#4f46e5',
+            background: '#ffffff',
+            customClass: { popup: 'rounded-4' }
+        }).then(() => {
+            // Bersihkan URL dari parameter parameter pesan agar saat direfresh alert tidak muncul lagi
+            window.history.replaceState({}, document.title, window.location.pathname);
+        });
+    }
+</script>
 </body>
 </html>

@@ -1,9 +1,9 @@
 <?php
 include '../koneksi.php';
 
-$id = $_GET['id'];
+$NO = $_GET['NO'];
 
-mysqli_query($conn, "DELETE FROM buku WHERE id='$id'");
+mysqli_query($conn, "DELETE FROM buku WHERE NO='$NO'");
 
 header("location:tampil.php");
 ?>

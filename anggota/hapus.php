@@ -2,8 +2,8 @@
 session_start();
 
 if(!isset($_SESSION['username'])){
-    header("location:../login.php");
-    exit;
+   header("location:tampil.php?pesan=berhasil_hapus");
+exit;
 }
 
 include '../koneksi.php';
