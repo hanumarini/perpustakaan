@@ -38,149 +38,46 @@ $total_anggota = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM anggota"));
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-    body {
-        font-family: 'Inter', sans-serif;
-        background-color: #f8fafc;
-        margin: 0;
-        color: #334155;
-    }
+    body { font-family: 'Inter', sans-serif; background-color: #f4f6f9; margin: 0; color: #334155; }
 
     /* SIDEBAR */
-    .sidebar {
-        width: 260px;
-        height: 100vh;
-        position: fixed;
-        background: #ffffff;
-        border-right: 1px solid #e2e8f0;
-        padding: 30px 20px;
-        display: flex;
-        flex-direction: column;
-        z-index: 1000;
-    }
-
-    .logo {
-        font-size: 24px;
-        font-weight: 700;
-        color: #4f46e5;
-        margin-bottom: 40px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .sidebar-nav {
-        flex-grow: 1;
-    }
-
-    .sidebar a {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: #64748b;
-        text-decoration: none;
-        padding: 12px 15px;
-        border-radius: 12px;
-        margin-bottom: 8px;
-        transition: all 0.3s;
-        font-weight: 500;
-    }
-
-    .sidebar a:hover, .sidebar a.active {
-        background: #f1f5f9;
-        color: #4f46e5;
-    }
-
-    .logout-btn {
-        margin-top: auto;
-        color: #ef4444 !important;
-        border: 1px solid transparent;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 15px;
-        text-decoration: none;
-        font-weight: 500;
-        border-radius: 12px;
-    }
-
-    .logout-btn:hover {
-        background: #fef2f2 !important;
-        border-color: #fee2e2;
-    }
+    .sidebar { width: 260px; height: 100vh; position: fixed; background: #ffffff; border-right: 1px solid #e2e8f0; padding: 30px 20px; display: flex; flex-direction: column; z-index: 1000; }
+    .logo { font-size: 24px; font-weight: 700; color: #4f46e5; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+    .sidebar-nav { flex-grow: 1; }
+    .sidebar a { display: flex; align-items: center; gap: 12px; color: #64748b; text-decoration: none; padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; transition: all 0.3s; font-weight: 500; }
+    .sidebar a:hover, .sidebar a.active { background: #f1f5f9; color: #4f46e5; }
+    .logout-btn { margin-top: auto; color: #ef4444 !important; border: 1px solid transparent; display: flex; align-items: center; gap: 12px; padding: 12px 15px; text-decoration: none; font-weight: 500; border-radius: 12px; }
+    .logout-btn:hover { background: #fef2f2 !important; border-color: #fee2e2; }
 
     /* MAIN CONTENT */
-    .main {
-        margin-left: 260px;
-        padding: 40px;
-    }
+    .main { margin-left: 260px; padding: 40px; }
 
     /* CARDS */
-    .table-card {
-        background: white;
-        border-radius: 20px;
-        padding: 30px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
+    .table-card { background: white; border-radius: 16px; padding: 30px; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
 
     /* SEARCH BOX */
-    .search-group {
-        position: relative;
-        max-width: 400px;
-    }
-
-    .search-box {
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 12px 12px 12px 45px;
-        transition: 0.3s;
-    }
-
-    .search-box:focus {
-        background: white;
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-    }
-
-    .search-icon {
-        position: absolute;
-        left: 18px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #94a3b8;
-    }
+    .search-group { position: relative; max-width: 380px; }
+    .search-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px 10px 42px; font-size: 14px; transition: 0.2s; }
+    .search-box:focus { background: white; border-color: #4f46e5; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08); }
+    .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 14px; }
 
     /* TABLE STYLING */
-    .table thead th {
-        background-color: #f8fafc;
-        color: #64748b;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 12px;
-        letter-spacing: 0.05em;
-        padding: 15px;
-        border-bottom: 2px solid #f1f5f9;
-    }
+    .table thead th { background-color: #f8fafc; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.05em; padding: 14px; border-bottom: 1px solid #e2e8f0; }
+    .table tbody td { padding: 14px; vertical-align: middle; color: #334155; font-size: 14px; border-bottom: 1px solid #f1f5f9; }
+    .table tbody tr:hover { background-color: #f8fafc; }
 
-    .table tbody td {
-        padding: 15px;
-        vertical-align: middle;
-        color: #1e293b;
-        border-bottom: 1px solid #f1f5f9;
-    }
+    /* AVATAR GENERATOR */
+    .avatar-circle { width: 35px; height: 35px; background-color: #e0e7ff; color: #4f46e5; font-weight: 600; font-size: 13px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-transform: uppercase; }
 
-    .btn-custom {
-        border-radius: 10px;
-        font-weight: 600;
-        padding: 10px 20px;
-    }
+    /* ACTION BUTTONS */
+    .btn-action { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; transition: 0.2s; border: 1px solid transparent; }
+    .btn-action-edit { background: #fffbeb; color: #d97706; }
+    .btn-action-edit:hover { background: #fef3c7; color: #b45309; }
+    .btn-action-delete { background: #fef2f2; color: #dc2626; }
+    .btn-action-delete:hover { background: #fee2e2; color: #b91c1c; }
 
-    .footer {
-        margin-top: 40px;
-        color: #94a3b8;
-        font-size: 14px;
-    }
+    .btn-custom { border-radius: 10px; font-weight: 600; padding: 10px 18px; font-size: 14px; }
+    .footer { margin-top: 40px; color: #94a3b8; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -191,24 +88,12 @@ $total_anggota = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM anggota"));
     </div>
 
     <nav class="sidebar-nav">
-        <a href="../dashboard.php">
-            <i class="fas fa-columns"></i> Dashboard
-        </a>
-        <a href="../buku/tampil.php">
-            <i class="fas fa-book"></i> Data Buku
-        </a>
-        <a href="../anggota/tampil.php" class="active">
-            <i class="fas fa-users"></i> Anggota
-        </a>
-        <a href="../peminjaman/tampil.php">
-            <i class="fas fa-exchange-alt"></i> Peminjaman
-        </a>
-        <a href="../pengembalian/tampil.php">
-            <i class="fas fa-check-circle"></i> Pengembalian
-        </a>
-        <a href="../laporan/index.php">
-            <i class="fas fa-file-alt"></i> Laporan
-        </a>
+        <a href="../dashboard.php"><i class="fas fa-columns"></i> Dashboard</a>
+        <a href="../buku/tampil.php"><i class="fas fa-book"></i> Data Buku</a>
+        <a href="../anggota/tampil.php" class="active"><i class="fas fa-users"></i> Anggota</a>
+        <a href="../peminjaman/tampil.php"><i class="fas fa-exchange-alt"></i> Peminjaman</a>
+        <a href="../pengembalian/tampil.php"><i class="fas fa-check-circle"></i> Pengembalian</a>
+        <a href="../laporan/index.php"><i class="fas fa-file-alt"></i> Laporan</a>
     </nav>
 
     <a href="../logout.php" class="logout-btn">
@@ -221,10 +106,10 @@ $total_anggota = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM anggota"));
     <div class="table-card">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h4 class="fw-bold m-0 text-dark">Data Anggota</h4>
-                <p class="text-muted small m-0">Total: <?= $total_anggota ?> anggota terdaftar</p>
+                <h4 class="fw-bold m-0 text-dark" style="font-size: 20px;">Data Anggota</h4>
+                <p class="text-muted small m-0">Total: <span class="badge bg-light text-primary border px-2 py-1 fw-bold"><?= $total_anggota ?></span> anggota terdaftar</p>
             </div>
-            <a href="tambah.php" class="btn btn-primary btn-custom shadow-sm">
+            <a href="tambah.php" class="btn btn-primary btn-custom shadow-sm" style="background:#4f46e5; border-color:#4f46e5;">
                 <i class="fas fa-user-plus me-2"></i> Tambah Anggota
             </a>
         </div>
@@ -241,37 +126,45 @@ $total_anggota = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM anggota"));
         </form>
 
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table align-middle">
                 <thead>
                     <tr>
-                        <th width="80">NO</th>
+                        <th width="70">NO</th>
                         <th>Nama Lengkap</th>
-                        <th>Alamat</th>
+                        <th>Alamat Rumah</th>
                         <th>No. Telepon</th>
-                        <th width="180" class="text-center">Aksi</th>
+                        <th width="120" class="text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if(mysqli_num_rows($data) > 0) { ?>
-                        <?php while($d = mysqli_fetch_array($data)){ ?>
+                        <?php 
+                        $no = 1; // 1. Membuat variabel nomor awal di luar perulangan
+                        while($d = mysqli_fetch_array($data)){ 
+                            // Mengambil huruf pertama nama sebagai avatar placeholder
+                            $initial = strtoupper(substr($d['nama'], 0, 1));
+                        ?>
                         <tr>
-                            <td class="fw-bold text-primary">#<?= $d['NO'] ?></td>
+                            <td><span class="badge bg-light text-secondary border fw-medium px-2 py-1"><?= $no++ ?></span></td>
                             <td>
-                                <div class="fw-semibold"><?= htmlspecialchars($d['nama']) ?></div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar-circle"><?= $initial ?></div>
+                                    <div class="fw-semibold text-dark"><?= htmlspecialchars($d['nama']) ?></div>
+                                </div>
                             </td>
-                            <td><?= htmlspecialchars($d['alamat']) ?></td>
+                            <td class="text-secondary"><?= htmlspecialchars($d['alamat']) ?></td>
                             <td>
-                                <span class="badge bg-light text-dark border">
-                                    <i class="fas fa-phone-alt me-1 text-muted"></i> <?= htmlspecialchars($d['no_hp']) ?>
+                                <span class="badge bg-white text-dark border fw-normal" style="padding: 6px 10px; border-radius: 8px;">
+                                    <i class="fas fa-phone-alt me-1 text-muted" style="font-size: 11px;"></i> <?= htmlspecialchars($d['no_hp']) ?>
                                 </span>
                             </td>
                             <td class="text-center">
-                                <div class="btn-group">
-                                    <a href="edit.php?NO=<?= $d['NO'] ?>" class="btn btn-outline-warning btn-sm shadow-sm me-2" style="border-radius: 8px;">
-                                        <i class="fas fa-edit"></i> Edit
+                                <div class="d-inline-flex gap-2">
+                                    <a href="edit.php?NO=<?= $d['NO'] ?>" class="btn-action btn-action-edit" title="Ubah Profil">
+                                        <i class="fas fa-pen"></i>
                                     </a>
-                                    <a href="hapus.php?NO=<?= $d['NO'] ?>" class="btn btn-outline-danger btn-sm shadow-sm btn-hapus-anggota" style="border-radius: 8px;">
-                                        <i class="fas fa-trash"></i> Hapus
+                                    <a href="hapus.php?NO=<?= $d['NO'] ?>" class="btn-action btn-action-delete btn-hapus-anggota" title="Hapus Anggota">
+                                        <i class="fas fa-trash-alt"></i>
                                     </a>
                                 </div>
                             </td>
@@ -280,8 +173,8 @@ $total_anggota = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM anggota"));
                     <?php } else { ?>
                         <tr>
                             <td colspan="5" class="text-center py-5 text-muted">
-                                <i class="fas fa-folder-open d-block mb-2" style="font-size: 40px;"></i>
-                                Data tidak ditemukan.
+                                <i class="fas fa-folder-open d-block mb-2" style="font-size: 36px; color:#cbd5e1;"></i>
+                                <span style="font-size: 14px;">Data anggota tidak ditemukan dalam sistem.</span>
                             </td>
                         </tr>
                     <?php } ?>
@@ -291,7 +184,7 @@ $total_anggota = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM anggota"));
     </div>
 
     <div class="footer text-center">
-        &copy; <?= date('Y') ?> <b>NusaBaca</b> • Sistem Manajemen Perpustakaan <i class="fas fa-shield-alt ms-1"></i>
+        &copy; 2026 <b>NusaBaca</b> • Sistem Manajemen Perpustakaan <i class="fas fa-shield-alt ms-1"></i>
     </div>
 
 </div>
@@ -301,7 +194,7 @@ $total_anggota = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM anggota"));
 <script>
     const urlParams = new URLSearchParams(window.location.search);
     
-    // 1. Logika Menampilkan Pop-up Berhasil Sukses Operasi CRUD
+    // Logika Menampilkan Pop-up Berhasil Sukses Operasi CRUD
     if(urlParams.has('pesan')) {
         const pesan = urlParams.get('pesan');
         let titleText = '';
@@ -329,16 +222,15 @@ $total_anggota = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM anggota"));
                 background: '#ffffff',
                 customClass: { popup: 'rounded-4' }
             }).then(() => {
-                // Menghilangkan parameter '?pesan=...' di URL agar pop-up tidak muncul lagi saat di-refresh
                 window.history.replaceState({}, document.title, window.location.pathname);
             });
         }
     }
 
-    // 2. Intersepsi Tombol Hapus: Mengubah Konfirmasi Klasik Menjadi SweetAlert2 Dialog
+    // Intersepsi Tombol Hapus: Mengubah Konfirmasi Klasik Menjadi SweetAlert2 Dialog
     document.querySelectorAll('.btn-hapus-anggota').forEach(button => {
         button.addEventListener('click', function(e) {
-            e.preventDefault(); // Menahan link asli agar tidak langsung pindah ke hapus.php
+            e.preventDefault(); 
             const href = this.getAttribute('href');
             
             Swal.fire({
@@ -354,7 +246,7 @@ $total_anggota = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM anggota"));
                 customClass: { popup: 'rounded-4' }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = href; // Eksekusi pindah halaman jika menekan tombol konfirmasi
+                    window.location.href = href; 
                 }
             });
         });

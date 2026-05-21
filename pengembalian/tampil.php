@@ -18,9 +18,23 @@ ORDER BY tanggal_kembali DESC, id DESC");
 
 $total_kembali = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjaman WHERE status='Dikembalikan'"));
 
-$sum_denda = mysqli_query($conn, "SELECT SUM(denda) AS total_kas FROM peminjaman WHERE status='Dikembalikan'");
-$row_denda = mysqli_fetch_assoc($sum_denda);
-$total_kas_denda = $row_denda['total_kas'] ?? 0;
+// Menghitung total kas denda secara real-time berdasarkan aturan 7 hari gratis, hari ke-8 denda Rp 1.000/hari
+$total_kas_denda = 0;
+$query_all_kembali = mysqli_query($conn, "SELECT tanggal_pinjam, tanggal_kembali FROM peminjaman WHERE status='Dikembalikan'");
+while($row = mysqli_fetch_assoc($query_all_kembali)) {
+    $tgl_pinjam = new DateTime($row['tanggal_pinjam']);
+    $tgl_kembali = new DateTime($row['tanggal_kembali']);
+    
+    // Batas waktu pinjam adalah 7 hari
+    $tgl_seharusnya_kembali = clone $tgl_pinjam;
+    $tgl_seharusnya_kembali->modify('+7 days');
+    
+    if($tgl_kembali > $tgl_seharusnya_kembali) {
+        $selisih = $tgl_kembali->diff($tgl_seharusnya_kembali);
+        $hari_terlambat = $selisih->days;
+        $total_kas_denda += ($hari_terlambat * 1000);
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -121,9 +135,24 @@ $total_kas_denda = $row_denda['total_kas'] ?? 0;
                 </thead>
                 <tbody>
                     <?php 
-                    $no = 1;
+                    $no = 1; // Variabel counter agar nomor rapi urut dari angka 1
                     if(mysqli_num_rows($data) > 0) {
                         while($d = mysqli_fetch_array($data)){ 
+                            
+                            // Menghitung denda per baris data
+                            $tgl_pjm = new DateTime($d['tanggal_pinjam']);
+                            $tgl_kmb = new DateTime($d['tanggal_kembali']);
+                            
+                            // Batas waktu peminjaman 7 hari
+                            $tgl_deadline = clone $tgl_pjm;
+                            $tgl_deadline->modify('+7 days');
+                            
+                            $nilai_denda = 0;
+                            if($tgl_kmb > $tgl_deadline) {
+                                $diff = $tgl_kmb->diff($tgl_deadline);
+                                $hari_terlambat = $diff->days;
+                                $nilai_denda = $hari_terlambat * 1000; // Denda 1.000 per hari jika terlambat (Hari ke-8+)
+                            }
                     ?>
                     <tr>
                         <td><span class="text-muted"><?= $no++ ?></span></td>
@@ -132,9 +161,9 @@ $total_kas_denda = $row_denda['total_kas'] ?? 0;
                         <td><?= date('d/m/Y', strtotime($d['tanggal_pinjam'])) ?></td>
                         <td><span class="text-success fw-medium"><i class="fas fa-calendar-check me-1"></i> <?= date('d/m/Y', strtotime($d['tanggal_kembali'])) ?></span></td>
                         <td>
-                            <?php if(isset($d['denda']) && $d['denda'] > 0) { ?>
+                            <?php if($nilai_denda > 0) { ?>
                                 <span class="badge bg-danger text-white px-2 py-1 rounded-3 fw-bold">
-                                    <i class="fas fa-coins me-1"></i> Rp <?= number_format($d['denda'], 0, ',', '.') ?>
+                                    <i class="fas fa-coins me-1"></i> Rp <?= number_format($nilai_denda, 0, ',', '.') ?>
                                 </span>
                             <?php } else { ?>
                                 <span class="badge bg-light text-success border border-success-subtle px-2 py-1 rounded-3 fw-medium">
@@ -172,7 +201,6 @@ $total_kas_denda = $row_denda['total_kas'] ?? 0;
         let messageText = 'Buku telah berhasil dikembalikan ke dalam arsip.';
         let iconType = 'success';
         
-        // Jika ada denda, buat peringatan pop-up bernuansa orange/warning agar pustakawan menagih denda
         if(nominalDenda > 0) {
             titleText = 'Buku Kembali (Ada Denda!)';
             messageText = 'Harap tagih denda keterlambatan sebesar: Rp ' + nominalDenda.toLocaleString('id-ID');
