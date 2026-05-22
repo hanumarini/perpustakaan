@@ -44,6 +44,7 @@ if(!$d){
 }
 
 // Proses Update Data Anggota
+$notif = '';
 if(isset($_POST['update'])){
     $nama   = mysqli_real_escape_string($conn, $_POST['nama']);
     $alamat = mysqli_real_escape_string($conn, $_POST['alamat']);
@@ -56,11 +57,10 @@ if(isset($_POST['update'])){
         WHERE NO='$NO'");
 
     if($update_query){
-       header("location:tampil.php?pesan=berhasil_update");
-exit;
+        $notif = 'sukses';
     } else {
-        echo "Gagal memperbarui data: " . mysqli_error($conn);
-        exit;
+        $notif = 'gagal';
+        $error_msg = mysqli_error($conn);
     }
 }
 ?>
@@ -75,6 +75,7 @@ exit;
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
     body {
@@ -211,27 +212,12 @@ exit;
     </div>
 
     <nav class="sidebar-nav">
-        <a href="../dashboard.php">
-            <i class="fas fa-columns"></i> Dashboard
-        </a>
-        <a href="../buku/tampil.php">
-            <i class="fas fa-book"></i> Data Buku
-        </a>
-        <a href="tampil.php" class="active">
-            <i class="fas fa-users"></i> Anggota
-        </a>
-        <a href="../peminjaman/tampil.php">
-            <i class="fas fa-exchange-alt"></i> Peminjaman
-        </a>
-        <a href="../pengembalian/tampil.php">
-            <i class="fas fa-check-circle"></i> Pengembalian
-        </a>
-        <a href="../laporan/index.php">
-            <i class="fas fa-file-alt"></i> Laporan
-        </a>
-
+        <a href="../dashboard.php"><i class="fas fa-columns"></i> Dashboard</a>
+        <a href="../buku/tampil.php"><i class="fas fa-book"></i> Data Buku</a>
+        <a href="tampil.php" class="active"><i class="fas fa-users"></i> Anggota</a>
+        <a href="../peminjaman/tampil.php"><i class="fas fa-exchange-alt"></i> Peminjaman</a>
+        <a href="../pengembalian/tampil.php"><i class="fas fa-check-circle"></i> Pengembalian</a>
         <a href="../laporan/index.php"><i class="fas fa-file-alt"></i> Laporan</a>
-    </nav>
     </nav>
 
     <a href="../logout.php" class="logout-btn">
@@ -263,8 +249,10 @@ exit;
                 <input type="text" name="no_hp" class="form-control" value="<?= isset($d['no_hp']) ? htmlspecialchars($d['no_hp']) : ''; ?>" required>
             </div>
 
+            <hr class="my-4" style="opacity: 0.1;">
+
             <div class="d-flex gap-2 mt-2">
-                <button type="submit" name="update" class="btn btn-warning btn-custom flex-grow-1 text-dark">
+                <button type="submit" name="update" class="btn btn-primary btn-custom flex-grow-1" style="background:#4f46e5; border-color:#4f46e5;">
                     <i class="fas fa-save me-2"></i> Perbarui Data Anggota
                 </button>
                 <a href="tampil.php" class="btn btn-light btn-custom px-4">Batal</a>
@@ -274,5 +262,26 @@ exit;
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // ENGINE NOTIFIKASI SWEETALERT JIKA DATA BERHASIL / GAGAL DISIMPAN
+    <?php if($notif === 'sukses') { ?>
+        Swal.fire({
+            title: 'Berhasil Diperbarui!',
+            text: 'Informasi data kartu profil anggota telah sukses diperbarui.',
+            icon: 'success',
+            confirmButtonColor: '#4f46e5',
+            customClass: { popup: 'rounded-4' }
+        }).then(() => { window.location.href = 'tampil.php'; });
+    <?php } elseif($notif === 'gagal') { ?>
+        Swal.fire({
+            title: 'Gagal Memperbarui!',
+            text: '<?= isset($error_msg) ? $error_msg : "Terjadi kesalahan struktur query database." ?>',
+            icon: 'error',
+            confirmButtonColor: '#ef4444',
+            customClass: { popup: 'rounded-4' }
+        });
+    <?php } ?>
+</script>
 </body>
 </html>

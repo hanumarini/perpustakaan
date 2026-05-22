@@ -31,35 +31,38 @@ $val_judul     = isset($d['judul']) ? $d['judul'] : (isset($d['JUDUL']) ? $d['JU
 $val_category  = isset($d['category']) ? $d['category'] : (isset($d['CATEGORY']) ? $d['CATEGORY'] : (isset($d['kategori']) ? $d['kategori'] : ''));
 $val_penulis   = isset($d['penulis']) ? $d['penulis'] : (isset($d['PENULIS']) ? $d['PENULIS'] : '');
 $val_penerbit  = isset($d['penerbit']) ? $d['penerbit'] : (isset($d['PENERBIT']) ? $d['PENERBIT'] : '');
-
+// Deteksi otomatis kolom stok/jumlah buku
+$val_jumlah    = isset($d['jumlah']) ? $d['jumlah'] : (isset($d['JUMLAH']) ? $d['JUMLAH'] : (isset($d['stok']) ? $d['stok'] : (isset($d['STOK']) ? $d['STOK'] : 0)));
 
 // ====================================================================
 // PROSES SIMPAN HASIL EDIT
 // ====================================================================
+$notif = '';
 if(isset($_POST['update'])){
-    // Mengambil data dari form (menggunakan huruf besar semua agar seragam)
     $ISBN     = mysqli_real_escape_string($conn, $_POST['ISBN']);
     $judul    = mysqli_real_escape_string($conn, $_POST['JUDUL']);
     $category = mysqli_real_escape_string($conn, $_POST['CATEGORY']);
     $penulis  = mysqli_real_escape_string($conn, $_POST['PENULIS']);
     $penerbit = mysqli_real_escape_string($conn, $_POST['PENERBIT']);
+    $jumlah   = (int)$_POST['JUMLAH']; // Ambil nilai stok baru
 
-    // Proses update ke database (Menyesuaikan dengan nama kolom database kamu)
-    // Jika di database kamu nama kolomnya huruf kecil semua, ubah bagian "ISBN='$ISBN'..." di bawah jadi huruf kecil
+    // Menggunakan pengecekan dinamis untuk kolom jumlah/stok saat update
+    $kolom_jumlah = isset($d['stok']) || isset($d['STOK']) ? 'stok' : 'jumlah';
+
     $update_query = mysqli_query($conn, "UPDATE buku SET 
         ISBN='$ISBN', 
         judul='$judul', 
         category='$category', 
         penulis='$penulis', 
-        penerbit='$penerbit' 
+        penerbit='$penerbit',
+        $kolom_jumlah='$jumlah' 
         WHERE NO='$NO'");
 
     if($update_query){
-        header("location:tampil.php");
-        exit;
+        $notif = 'sukses';
     } else {
-        echo "Gagal memperbarui data: " . mysqli_error($conn);
-        exit;
+        $notif = 'gagal';
+        $error_msg = mysqli_error($conn);
     }
 }
 ?>
@@ -74,6 +77,7 @@ if(isset($_POST['update'])){
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
     body {
@@ -210,24 +214,12 @@ if(isset($_POST['update'])){
     </div>
 
     <nav class="sidebar-nav">
-        <a href="../dashboard.php">
-            <i class="fas fa-columns"></i> Dashboard
-        </a>
-        <a href="tampil.php" class="active">
-            <i class="fas fa-book"></i> Data Buku
-        </a>
-        <a href="../anggota/tampil.php">
-            <i class="fas fa-users"></i> Anggota
-        </a>
-        <a href="../peminjaman/tampil.php">
-            <i class="fas fa-exchange-alt"></i> Peminjaman
-        </a>
-        <a href="../pengembalian/tampil.php">
-            <i class="fas fa-check-circle"></i> Pengembalian
-        </a>
-        <a href="../laporan/index.php">
-            <i class="fas fa-file-alt"></i> Laporan
-        </a>
+        <a href="../dashboard.php"><i class="fas fa-columns"></i> Dashboard</a>
+        <a href="tampil.php" class="active"><i class="fas fa-book"></i> Data Buku</a>
+        <a href="../anggota/tampil.php"><i class="fas fa-users"></i> Anggota</a>
+        <a href="../peminjaman/tampil.php"><i class="fas fa-exchange-alt"></i> Peminjaman</a>
+        <a href="../pengembalian/tampil.php"><i class="fas fa-check-circle"></i> Pengembalian</a>
+        <a href="../laporan/index.php"><i class="fas fa-file-alt"></i> Laporan</a>
     </nav>
 
     <a href="../logout.php" class="logout-btn">
@@ -271,8 +263,15 @@ if(isset($_POST['update'])){
                 </div>
             </div>
 
+            <div class="mb-4">
+                <label class="form-label">Jumlah / Stok Buku (Ekspl)</label>
+                <input type="number" name="JUMLAH" class="form-control" min="0" value="<?= htmlspecialchars($val_jumlah) ?>" required>
+            </div>
+
+            <hr class="my-4" style="opacity: 0.1;">
+
             <div class="d-flex gap-2 mt-2">
-                <button type="submit" name="update" class="btn btn-warning btn-custom flex-grow-1 text-dark">
+                <button type="submit" name="update" class="btn btn-primary btn-custom flex-grow-1" style="background:#4f46e5; border-color:#4f46e5;">
                     <i class="fas fa-save me-2"></i> Perbarui Data Buku
                 </button>
                 <a href="tampil.php" class="btn btn-light btn-custom px-4">Batal</a>
@@ -282,5 +281,26 @@ if(isset($_POST['update'])){
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // NOTIFIKASI SWEETALERT JIKA UPDATE BERHASIL / GAGAL
+    <?php if($notif === 'sukses') { ?>
+        Swal.fire({
+            title: 'Berhasil Diperbarui!',
+            text: 'Informasi dan stok buku telah diperbarui di sistem.',
+            icon: 'success',
+            confirmButtonColor: '#4f46e5',
+            customClass: { popup: 'rounded-4' }
+        }).then(() => { window.location.href = 'tampil.php'; });
+    <?php } elseif($notif === 'gagal') { ?>
+        Swal.fire({
+            title: 'Gagal Memperbarui!',
+            text: '<?= isset($error_msg) ? $error_msg : "Terjadi kesalahan database." ?>',
+            icon: 'error',
+            confirmButtonColor: '#ef4444',
+            customClass: { popup: 'rounded-4' }
+        });
+    <?php } ?>
+</script>
 </body>
 </html>

@@ -8,19 +8,12 @@ if(!isset($_SESSION['username'])){
 
 include '../koneksi.php';
 
-$cari = isset($_GET['cari']) ? $_GET['cari'] : '';
-
-// Sanitasi input pencarian sederhana
-$cari_safe = mysqli_real_escape_string($conn, $cari);
-
-$data = mysqli_query($conn, "SELECT * FROM buku
-WHERE judul LIKE '%$cari_safe%'
-OR penulis LIKE '%$cari_safe%'
-OR category LIKE '%$cari_safe%'");
+// Menangkap parameter pesan sukses dari URL jika ada
+$notif_hapus = isset($_GET['pesan']) && $_GET['pesan'] == 'terhapus' ? true : false;
 ?>
 
 <!DOCTYPE html>
-<html lang="NO">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,6 +22,7 @@ OR category LIKE '%$cari_safe%'");
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
     body {
@@ -86,7 +80,6 @@ OR category LIKE '%$cari_safe%'");
     .logout-btn {
         margin-top: auto;
         color: #ef4444 !important;
-        border: 1px solid transparent;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -98,7 +91,6 @@ OR category LIKE '%$cari_safe%'");
 
     .logout-btn:hover {
         background: #fef2f2 !important;
-        border-color: #fee2e2;
     }
 
     /* MAIN CONTENT */
@@ -107,8 +99,8 @@ OR category LIKE '%$cari_safe%'");
         padding: 40px;
     }
 
-    /* CARDS */
-    .table-card {
+    /* DATA CARD & TABLE */
+    .data-card {
         background: white;
         border-radius: 20px;
         padding: 30px;
@@ -116,73 +108,18 @@ OR category LIKE '%$cari_safe%'");
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
 
-    /* SEARCH BOX */
-    .search-group {
-        position: relative;
-        max-width: 400px;
-    }
-
-    .search-box {
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 12px 12px 12px 45px;
-        transition: 0.3s;
-    }
-
-    .search-box:focus {
-        background: white;
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-    }
-
-    .search-icon {
-        position: absolute;
-        left: 18px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #94a3b8;
-    }
-
-    /* TABLE STYLING */
-    .table thead th {
-        background-color: #f8fafc;
-        color: #64748b;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 11px;
-        letter-spacing: 0.05em;
-        padding: 15px;
-        border-bottom: 2px solid #f1f5f9;
-    }
-
-    .table tbody td {
-        padding: 15px;
-        vertical-align: middle;
+    .table th {
+        background-color: #f1f5f9;
         color: #1e293b;
-        font-size: 14px;
-        border-bottom: 1px solid #f1f5f9;
-    }
-
-    .btn-custom {
-        border-radius: 10px;
         font-weight: 600;
-        padding: 10px 20px;
+        border-bottom: 2px solid #e2e8f0;
     }
 
-    .badge-category {
-        background: #e0e7ff;
-        color: #4338ca;
-        padding: 5px 10px;
+    .btn-action {
         border-radius: 8px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .footer {
-        margin-top: 40px;
-        color: #94a3b8;
+        padding: 6px 12px;
         font-size: 14px;
+        font-weight: 500;
     }
 </style>
 </head>
@@ -194,22 +131,11 @@ OR category LIKE '%$cari_safe%'");
     </div>
 
     <nav class="sidebar-nav">
-        <a href="../dashboard.php">
-            <i class="fas fa-columns"></i> Dashboard
-        </a>
-        <a href="../buku/tampil.php" class="active">
-            <i class="fas fa-book"></i> Data Buku
-        </a>
-        <a href="../anggota/tampil.php">
-            <i class="fas fa-users"></i> Anggota
-        </a>
-        <a href="../peminjaman/tampil.php">
-            <i class="fas fa-exchange-alt"></i> Peminjaman
-        </a>
-        <a href="../pengembalian/tampil.php">
-            <i class="fas fa-check-circle"></i> Pengembalian
-        </a>
-
+        <a href="../dashboard.php"><i class="fas fa-columns"></i> Dashboard</a>
+        <a href="tampil.php" class="active"><i class="fas fa-book"></i> Data Buku</a>
+        <a href="../anggota/tampil.php"><i class="fas fa-users"></i> Anggota</a>
+        <a href="../peminjaman/tampil.php"><i class="fas fa-exchange-alt"></i> Peminjaman</a>
+        <a href="../pengembalian/tampil.php"><i class="fas fa-check-circle"></i> Pengembalian</a>
         <a href="../laporan/index.php"><i class="fas fa-file-alt"></i> Laporan</a>
     </nav>
 
@@ -219,89 +145,117 @@ OR category LIKE '%$cari_safe%'");
 </div>
 
 <div class="main">
-
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-dark m-0">Pengelolaan Buku</h3>
-        <div class="bg-white border px-3 py-2 rounded-pill shadow-sm">
-            <i class="fas fa-user-circle text-primary me-2"></i> 
-            <span class="fw-semibold"><?= $_SESSION['username']; ?></span>
-        </div>
+        <h3 class="fw-bold text-dark m-0">Koleksi Data Buku</h3>
+        <a href="tambah.php" class="btn btn-primary" style="background:#4f46e5; border-color:#4f46e5; border-radius:12px; padding:10px 20px; font-weight:600;">
+            <i class="fas fa-plus me-2"></i> Tambah Buku Baru
+        </a>
     </div>
 
-    <div class="table-card">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h5 class="fw-bold m-0">Katalog Buku</h5>
-            <a href="tambah.php" class="btn btn-primary btn-custom shadow-sm">
-                <i class="fas fa-plus me-2"></i> Tambah Buku
-            </a>
-            
-        </div>
-
-        <form method="GET" class="mb-4">
-            <div class="search-group">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" 
-                       name="cari" 
-                       class="form-control search-box" 
-                       placeholder="Cari judul, penulis, atau kategori..." 
-                       value="<?= htmlspecialchars($cari) ?>">
-            </div>
-        </form>
-
+    <div class="data-card">
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle m-0">
                 <thead>
                     <tr>
-                        <th>NO</th>
+                        <th width="60">No</th>
                         <th>ISBN</th>
                         <th>Judul Buku</th>
                         <th>Kategori</th>
                         <th>Penulis</th>
-                        <th>Penerbit</th>
-                        <th class="text-center">Aksi</th>
+                        <th>Penerbit</th> <th width="100">Stok</th>
+                        <th width="180" class="text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if(mysqli_num_rows($data) > 0) { ?>
-                        <?php while($d = mysqli_fetch_array($data)){ ?>
+                    <?php
+                    $no = 1;
+                    $query = mysqli_query($conn, "SELECT * FROM buku ORDER BY NO DESC");
+                    if(mysqli_num_rows($query) > 0) {
+                        while($d = mysqli_fetch_array($query)){
+                            // Deteksi variabel dinamis dari database kamu
+                            $stok = isset($d['jumlah']) ? $d['jumlah'] : (isset($d['stok']) ? $d['stok'] : 0);
+                            $judul = isset($d['judul']) ? $d['judul'] : (isset($d['JUDUL']) ? $d['JUDUL'] : 'Tidak ada judul');
+                            $isbn = isset($d['ISBN']) ? $d['ISBN'] : (isset($d['isbn']) ? $d['isbn'] : '-');
+                            $category = isset($d['category']) ? $d['category'] : (isset($d['CATEGORY']) ? $d['CATEGORY'] : (isset($d['kategori']) ? $d['kategori'] : '-'));
+                            $penulis = isset($d['penulis']) ? $d['penulis'] : (isset($d['PENULIS']) ? $d['PENULIS'] : '-');
+                            
+                            // Logika Deteksi Kolom Penerbit (Besar / Kecil)
+                            $penerbit = isset($d['penerbit']) ? $d['penerbit'] : (isset($d['PENERBIT']) ? $d['PENERBIT'] : '-');
+                    ?>
                         <tr>
-                            <td class="text-muted">#<?= $d['NO'] ?></td>
-                            <td class="small fw-mono"><?= $d['ISBN'] ?></td>
-                            <td><span class="fw-bold"><?= $d['judul'] ?></span></td>
-                            <td><span class="badge-category"><?= $d['category'] ?></span></td>
-                            <td><?= $d['penulis'] ?></td>
-                            <td><?= $d['penerbit'] ?></td>
+                            <td><?= $no++; ?></td>
+                            <td><span class="badge bg-light text-secondary border"><?= htmlspecialchars($isbn); ?></span></td>
+                            <td class="fw-semibold text-dark"><?= htmlspecialchars($judul); ?></td>
+                            <td><?= htmlspecialchars($category); ?></td>
+                            <td><?= htmlspecialchars($penulis); ?></td>
+                            <td><?= htmlspecialchars($penerbit); ?></td> <td>
+                                <span class="badge <?= ($stok <= 2) ? 'bg-danger' : 'bg-success'; ?> rounded-pill">
+                                    <?= $stok; ?> Eks
+                                </span>
+                            </td>
                             <td class="text-center">
-                                <div class="btn-group">
-                                    <a href="edit.php?NO=<?= $d['NO'] ?>" class="btn btn-sm btn-outline-warning me-2" style="border-radius: 8px;">
-                                        <i class="fas fa-pen"></i>
-                                    </a>
-                                    <a href="hapus.php?NO=<?= $d['NO'] ?>" class="btn btn-sm btn-outline-danger" style="border-radius: 8px;" onclick="return confirm('Hapus buku ini dari database?')">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
-                                </div>
+                                <a href="edit.php?NO=<?= $d['NO']; ?>" class="btn btn-outline-warning btn-action text-dark me-1">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="hapus.php?NO=<?= $d['NO']; ?>" class="btn btn-outline-danger btn-action btn-hapus">
+                                    <i class="fas fa-trash-alt"></i> Hapus
+                                </a>
                             </td>
                         </tr>
-                        <?php } ?>
-                    <?php } else { ?>
-                        <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
-                                <i class="fas fa-book-open d-block mb-3" style="font-size: 40px; opacity: 0.3;"></i>
-                                Buku tidak ditemukan dalam database.
-                            </td>
-                        </tr>
-                    <?php } ?>
+                    <?php 
+                        }
+                    } else {
+                        echo "<tr><td colspan='8' class='text-center text-muted py-4'>Belum ada data buku di dalam database.</td></tr>";
+                    }
+                    ?>
                 </tbody>
             </table>
         </div>
     </div>
-
-    <div class="footer text-center">
-        &copy; <?= date('Y') ?> <b>NusaBaca</b> • <i class="fas fa-code"></i> v2.0
-    </div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // 1. ENGINE KONFIRMASI SEBELUM HAPUS DATA
+    const tombolHapus = document.querySelectorAll('.btn-hapus');
+    
+    tombolHapus.forEach(tombol => {
+        tombol.addEventListener('click', function(e) {
+            e.preventDefault(); 
+            
+            const urlTujuan = this.getAttribute('href'); 
+            
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Data buku yang dihapus akan hilang permanen dari database!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444', 
+                cancelButtonColor: '#64748b',  
+                confirmButtonText: 'Ya, Hapus Data!',
+                cancelButtonText: 'Batal',
+                customClass: { popup: 'rounded-4' }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = urlTujuan; 
+                }
+            });
+        });
+    });
+
+    // 2. ALERT SUKSES SETELAH REDIRECT DARI FILE HAPUS.PHP
+    <?php if($notif_hapus) { ?>
+        Swal.fire({
+            title: 'Berhasil Dihapus!',
+            text: 'Data buku tersebut telah sepenuhnya dibersihkan dari sistem.',
+            icon: 'success',
+            confirmButtonColor: '#4f46e5',
+            customClass: { popup: 'rounded-4' }
+        }).then(() => {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        });
+    <?php } ?>
+</script>
 </body>
 </html>

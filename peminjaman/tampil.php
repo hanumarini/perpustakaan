@@ -94,7 +94,7 @@ $total_dipinjam = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjaman 
 
     <div class="table-card">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <form method="GET" class="flex-grow-1 me-3">
+            <form method="GET" class="flex-grow-1">
                 <div class="search-group">
                     <i class="fas fa-search search-icon"></i>
                     <input type="text" name="cari" class="form-control search-box" placeholder="Cari peminjam aktif atau judul buku..." value="<?= htmlspecialchars($cari) ?>">
@@ -123,25 +123,29 @@ $total_dipinjam = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjaman 
                         while($d = mysqli_fetch_array($data)){ 
                             $tgl_pinjam = new DateTime($d['tanggal_pinjam']);
                             $hari_ini = new DateTime(date('Y-m-d'));
+                            
+                            // Menghitung selisih hari berjalan secara absolut
                             $durasi = $hari_ini->diff($tgl_pinjam)->days;
-                            $batas_pinjam = 8;
+                            
+                            // Aturan: Gratis 7 hari, hari ke-8 mulai terlambat/denda
+                            $batas_aman = 7; 
                     ?>
                     <tr>
                         <td><span class="text-muted"><?= $no++ ?></span></td>
                         <td class="fw-semibold text-primary"><?= htmlspecialchars($d['nama_peminjam']) ?></td>
                         <td><i class="fas fa-book me-2 text-muted"></i><?= htmlspecialchars($d['judul_buku']) ?></td>
                         <td><i class="far fa-calendar me-1 text-muted"></i> <?= date('d/m/Y', strtotime($d['tanggal_pinjam'])) ?></td>
-                        <td><i class="far fa-calendar-check me-1 text-muted"></i> <?= date('d/m/Y', strtotime($d['tanggal_pinjam'] . ' + ' . $batas_pinjam . ' days')) ?></td>
+                        <td><i class="far fa-calendar-check me-1 text-muted"></i> <?= date('d/m/Y', strtotime($d['tanggal_pinjam'] . " +$batas_aman days")) ?></td>
                         <td>
-                            <?php if($durasi > $batas_pinjam) { 
-                                $lewat = $durasi - $batas_pinjam;
+                            <?php if($durasi > $batas_aman) { 
+                                $lewat = $durasi - $batas_aman;
                             ?>
                                 <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
                                     <i class="fas fa-exclamation-circle me-1"></i> Terlambat <?= $lewat ?> Hari
                                 </span>
                             <?php } else { ?>
                                 <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                                    <i class="fas fa-check me-1"></i> Aman (<?= $batas_pinjam - $durasi ?> hari sisa)
+                                    <i class="fas fa-check me-1"></i> Aman (<?= $batas_aman - $durasi ?> hari sisa)
                                 </span>
                             <?php } ?>
                         </td>
@@ -206,7 +210,6 @@ $total_dipinjam = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjaman 
             background: '#ffffff',
             customClass: { popup: 'rounded-4' }
         }).then(() => {
-            // Bersihkan URL dari parameter parameter pesan agar saat direfresh alert tidak muncul lagi
             window.history.replaceState({}, document.title, window.location.pathname);
         });
     }

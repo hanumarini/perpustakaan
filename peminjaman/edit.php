@@ -26,6 +26,35 @@ if (!$data_pinjam) {
     exit;
 }
 
+// ====================================================================
+// LOGIKA PROSES UPDATE (GABUNGAN DARI EDIT_PROSES.PHP)
+// ====================================================================
+$notif = '';
+if (isset($_POST['proses_update'])) {
+    $nama_peminjam   = mysqli_real_escape_string($conn, $_POST['nama_peminjam']);
+    $judul_buku      = mysqli_real_escape_string($conn, $_POST['judul_buku']);
+    $tanggal_pinjam  = mysqli_real_escape_string($conn, $_POST['tanggal_pinjam']);
+    $tanggal_kembali = mysqli_real_escape_string($conn, $_POST['tanggal_kembali']);
+    $status          = mysqli_real_escape_string($conn, $_POST['status']);
+    $denda           = mysqli_real_escape_string($conn, $_POST['denda']);
+
+    $query_update = mysqli_query($conn, "UPDATE peminjaman SET 
+        nama_peminjam   = '$nama_peminjam', 
+        judul_buku      = '$judul_buku', 
+        tanggal_pinjam  = '$tanggal_pinjam', 
+        tanggal_kembali = '$tanggal_kembali', 
+        status          = '$status', 
+        denda           = '$denda' 
+        WHERE id        = '$id'");
+
+    if ($query_update) {
+        $notif = 'sukses';
+    } else {
+        $notif = 'gagal';
+        $error_db = mysqli_error($conn);
+    }
+}
+
 // 3. Ambil data master Anggota & Buku untuk keperluan opsi Dropdown (Select)
 $list_anggota = mysqli_query($conn, "SELECT nama FROM anggota ORDER BY nama ASC");
 $list_buku = mysqli_query($conn, "SELECT judul FROM buku ORDER BY judul ASC");
@@ -193,7 +222,7 @@ $list_buku = mysqli_query($conn, "SELECT judul FROM buku ORDER BY judul ASC");
     </div>
 
     <div class="form-card">
-        <form action="edit_proses.php" method="POST" id="formEditPeminjaman">
+        <form action="" method="POST" id="formEditPeminjaman">
             
             <input type="hidden" name="id" value="<?= $data_pinjam['id'] ?>">
 
@@ -250,7 +279,7 @@ $list_buku = mysqli_query($conn, "SELECT judul FROM buku ORDER BY judul ASC");
                 <a href="tampil.php" class="btn btn-light btn-custom border text-secondary">
                     <i class="fas fa-arrow-left me-2"></i> Kembali
                 </a>
-                <button type="submit" name="submit" class="btn btn-primary btn-custom shadow-sm">
+                <button type="submit" class="btn btn-primary btn-custom shadow-sm" style="background-color: #4f46e5; border-color: #4f46e5;">
                     <i class="fas fa-save me-2"></i> Simpan Perubahan
                 </button>
             </div>
@@ -267,7 +296,7 @@ $list_buku = mysqli_query($conn, "SELECT judul FROM buku ORDER BY judul ASC");
 
 <script>
     document.getElementById('formEditPeminjaman').addEventListener('submit', function(e) {
-        e.preventDefault(); // Tahan pengiriman form default
+        e.preventDefault(); // Blokir submit otomatis dari HTML
         
         Swal.fire({
             title: 'Simpan Perubahan?',
@@ -281,10 +310,38 @@ $list_buku = mysqli_query($conn, "SELECT judul FROM buku ORDER BY judul ASC");
             customClass: { popup: 'rounded-4' }
         }).then((result) => {
             if (result.isConfirmed) {
-                this.submit(); // Jalankan pengiriman form asli ke edit_proses.php jika disetujui
+                // Membuat input hidden tiruan agar perintah POST['proses_update'] terbaca oleh PHP
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'proses_update';
+                hiddenInput.value = '1';
+                this.appendChild(hiddenInput);
+
+                this.submit(); // Lanjutkan submit form secara manual
             }
         });
     });
+
+    // MENAMPILKAN NOTIFIKASI SAKLAR POPUP SWEETALERT SETELAH PROSES PHP SELESAI
+    <?php if ($notif === 'sukses') { ?>
+        Swal.fire({
+            title: 'Berhasil Diperbarui!',
+            text: 'Data transaksi sirkulasi peminjaman telah berhasil disimpan.',
+            icon: 'success',
+            confirmButtonColor: '#4f46e5',
+            customClass: { popup: 'rounded-4' }
+        }).then(() => {
+            window.location.href = 'tampil.php';
+        });
+    <?php } elseif ($notif === 'gagal') { ?>
+        Swal.fire({
+            title: 'Gagal Menyimpan Data',
+            text: 'Terjadi kesalahan sistem: <?= isset($error_db) ? addslashes($error_db) : "" ?>',
+            icon: 'error',
+            confirmButtonColor: '#ef4444',
+            customClass: { popup: 'rounded-4' }
+        });
+    <?php } ?>
 </script>
 
 </body>

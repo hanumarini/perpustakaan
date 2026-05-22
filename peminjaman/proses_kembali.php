@@ -17,7 +17,7 @@ if(isset($_GET['id'])) {
     
     if($data) {
         $tanggal_pinjam = $data['tanggal_pinjam'];
-        $tanggal_kembali = date('Y-m-m'); // Tanggal pengembalian adalah hari ini
+        $tanggal_kembali = date('Y-m-d'); // Tanggal pengembalian adalah hari ini
         
         // 2. Hitung Selisih Hari
         $pinjam = new DateTime($tanggal_pinjam);

@@ -1,14 +1,52 @@
 <?php
 session_start();
+
 if(!isset($_SESSION['username'])){
     header("location:../login.php");
     exit;
 }
+
 include '../koneksi.php';
 
-// Ambil data master Anggota & Buku
-$list_anggota = mysqli_query($conn, "SELECT nama FROM anggota ORDER BY nama ASC");
-$list_buku = mysqli_query($conn, "SELECT judul, jumlah, category FROM buku WHERE jumlah > 0 ORDER BY judul ASC");
+$notif = '';
+if(isset($_POST['submit'])){
+    $nama = mysqli_real_escape_string($conn, $_POST['nama']);
+    $tgl_pinjam = mysqli_real_escape_string($conn, $_POST['tgl_pinjam']);
+    $tgl_kembali = mysqli_real_escape_string($conn, $_POST['tgl_kembali']);
+    $status = "Dipinjam";
+    
+    // Menangkap array dari dropdown buku-buku yang dipilih
+    $judul_buku_array = isset($_POST['judul']) ? $_POST['judul'] : [];
+
+    // Filter array agar tidak ada value kosong
+    $judul_buku_array = array_filter($judul_buku_array);
+
+    if(!empty($judul_buku_array)){
+        
+        // 1. GABUNGKAN BANYAK BUKU MENJADI SATU STRING (Dipisahkan oleh koma)
+        $kumpulan_judul = implode(", ", $judul_buku_array);
+        $judul_safe = mysqli_real_escape_string($conn, $kumpulan_judul);
+        
+        // 2. INSERT HANYA SATU BARIS KE TABEL PEMINJAMAN
+        $insert = mysqli_query($conn, "INSERT INTO peminjaman 
+        (nama_peminjam, judul_buku, tanggal_pinjam, tanggal_kembali, status) 
+        VALUES ('$nama', '$judul_safe', '$tgl_pinjam', '$tgl_kembali', '$status')");
+        
+        // 3. SEKALIGUS POTONG STOK MASING-MASING BUKU YANG DIPILIH
+        foreach($judul_buku_array as $judul_tunggal){
+            $judul_tunggal_safe = mysqli_real_escape_string($conn, $judul_tunggal);
+            mysqli_query($conn, "UPDATE buku SET jumlah = jumlah - 1 WHERE judul = '$judul_tunggal_safe'");
+        }
+        
+        if($insert){
+            $notif = 'sukses';
+        } else {
+            $notif = 'gagal';
+        }
+    } else {
+        $notif = 'kosong';
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -17,89 +55,33 @@ $list_buku = mysqli_query($conn, "SELECT judul, jumlah, category FROM buku WHERE
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tambah Peminjaman - NusaBaca</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
-    body { font-family: 'Inter', sans-serif; background-color: #f4f6f9; color: #334155; }
-    
-    /* SIDEBAR */
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; margin: 0; color: #334155; }
     .sidebar { width: 260px; height: 100vh; position: fixed; background: #ffffff; border-right: 1px solid #e2e8f0; padding: 30px 20px; display: flex; flex-direction: column; z-index: 1000; }
     .logo { font-size: 24px; font-weight: 700; color: #4f46e5; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
-    .sidebar a { display: flex; align-items: center; gap: 12px; color: #64748b; text-decoration: none; padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; font-weight: 500; transition: 0.2s; }
+    .sidebar-nav { flex-grow: 1; }
+    .sidebar a { display: flex; align-items: center; gap: 12px; color: #64748b; text-decoration: none; padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; transition: all 0.3s; font-weight: 500; }
     .sidebar a:hover, .sidebar a.active { background: #f1f5f9; color: #4f46e5; }
+    .logout-btn { margin-top: auto; color: #ef4444 !important; display: flex; align-items: center; gap: 12px; padding: 12px 15px; text-decoration: none; font-weight: 500; border-radius: 12px; }
+    .logout-btn:hover { background: #fef2f2 !important; }
     
-    /* MAIN CONTENT */
     .main { margin-left: 260px; padding: 40px; }
-    .form-card { background: white; border-radius: 16px; padding: 35px; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); max-width: 900px; }
-    .form-label { font-weight: 600; color: #475569; font-size: 14px; margin-bottom: 8px; }
-
-    /* MODERN MULTI-SELECT GRID ENGINE */
-    .book-scroll-area { max-height: 280px; overflow-y: auto; padding-right: 5px; margin-bottom: 15px; }
+    .form-card { background: white; border-radius: 20px; padding: 40px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-width: 750px; }
+    .form-label { font-weight: 600; color: #1e293b; margin-bottom: 8px; }
+    .form-control, .form-select { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 15px; transition: 0.3s; }
+    .form-control:focus, .form-select:focus { background: white; border-color: #4f46e5; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+    .btn-custom { border-radius: 12px; padding: 12px; font-weight: 600; transition: 0.3s; }
+    .btn-back { color: #64748b; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; font-weight: 500; }
+    .btn-back:hover { color: #4f46e5; }
     
-    /* Custom Scrollbar */
-    .book-scroll-area::-webkit-scrollbar { width: 6px; }
-    .book-scroll-area::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
-    .book-scroll-area::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-
-    /* Interactive Card Item */
-    .book-selectable-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 14px;
-        cursor: pointer;
-        position: relative;
-        transition: all 0.2s ease-in-out;
-        user-select: none;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-    
-    .book-selectable-card:hover {
-        border-color: #cbd5e1;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-
-    /* Status Saat Kartu Dicentang Admin */
-    .book-checkbox:checked + .book-selectable-card {
-        border-color: #4f46e5;
-        background-color: #f5f3ff;
-        box-shadow: 0 0 0 1px #4f46e5;
-    }
-
-    .book-checkbox:checked + .book-selectable-card .check-badge {
-        display: flex !important;
-    }
-
-    /* Ikon Centang Sudut Atas */
-    .check-badge {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        background: #4f46e5;
-        color: white;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-        border: 2px solid #ffffff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .form-control, .form-select {
-        border-radius: 10px; padding: 11px 14px; border: 1px solid #cbd5e1; font-size: 14px;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #4f46e5; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
-    }
+    .book-row { animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
 <body>
@@ -112,112 +94,141 @@ $list_buku = mysqli_query($conn, "SELECT judul, jumlah, category FROM buku WHERE
         <a href="../anggota/tampil.php"><i class="fas fa-users"></i> Anggota</a>
         <a href="tampil.php" class="active"><i class="fas fa-exchange-alt"></i> Peminjaman</a>
         <a href="../pengembalian/tampil.php"><i class="fas fa-check-circle"></i> Pengembalian</a>
-         <a href="../laporan/index.php"><i class="fas fa-file-alt"></i> Laporan</a>
+        <a href="../laporan/index.php"><i class="fas fa-file-alt"></i> Laporan</a>
     </nav>
+    <a href="../logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Keluar</a>
 </div>
 
 <div class="main">
-    <div class="mb-4">
-        <h4 class="fw-bold text-dark" style="font-size:22px;">Transaksi Peminjaman Baru</h4>
-        <p class="text-muted small">Pilih anggota dan klik pada kartu buku untuk memilih lebih dari satu buku sekaligus</p>
-    </div>
+    <a href="tampil.php" class="btn-back"><i class="fas fa-arrow-left"></i> Kembali ke Daftar</a>
+    <h3 class="fw-bold text-dark mb-4">Catat Peminjaman Baru</h3>
 
     <div class="form-card">
-        <form action="tambah_proses.php" method="POST" id="formMultiPeminjaman">
+        <form method="POST" id="formPeminjaman">
             
             <div class="mb-4">
-                <label class="form-label"><i class="fas fa-user-circle me-1 text-primary"></i> Nama Peminjam (Anggota)</label>
-                <select name="nama_peminjam" class="form-select" required>
-                    <option value="">-- Pilih Anggota Perpustakaan --</option>
-                    <?php while($agt = mysqli_fetch_array($list_anggota)) { ?>
-                        <option value="<?= htmlspecialchars($agt['nama']) ?>"><?= htmlspecialchars($agt['nama']) ?></option>
-                    <?php } ?>
+                <label class="form-label">Nama Peminjam (Anggota)</label>
+                <select name="nama" class="form-select" required>
+                    <option value="">-- Pilih Anggota --</option>
+                    <?php
+                    $anggota = mysqli_query($conn, "SELECT * FROM anggota ORDER BY nama ASC");
+                    while($a = mysqli_fetch_array($anggota)){
+                        echo "<option value='".htmlspecialchars($a['nama'])."'>".htmlspecialchars($a['nama'])."</option>";
+                    }
+                    ?>
                 </select>
             </div>
 
             <div class="mb-4">
-                <label class="form-label d-block"><i class="fas fa-book-open me-1 text-primary"></i> Klik Buku yang Dipinjam</label>
+                <label class="form-label d-flex justify-content-between align-items-center">
+                    <span>Buku yang Dipinjam</span>
+                    <button type="button" id="btn-tambah-buku" class="btn btn-sm btn-outline-primary style-btn px-3" style="border-radius: 8px;">
+                        <i class="fas fa-plus me-1"></i> Tambah Buku
+                    </button>
+                </label>
                 
-                <div class="book-scroll-area">
-                    <div class="row row-cols-1 row-cols-md-3 g-3">
-                        <?php 
-                        $i = 0;
-                        if(mysqli_num_rows($list_buku) > 0) {
-                            while($bk = mysqli_fetch_array($list_buku)) { 
-                                $i++;
-                                // Menentukan warna badge stok
-                                $badge_color = ($bk['jumlah'] <= 2) ? 'bg-danger' : 'bg-success';
-                        ?>
-                            <div class="col">
-                                <input type="checkbox" name="judul_buku[]" value="<?= htmlspecialchars($bk['judul']) ?>" id="buku_<?= $i ?>" class="book-checkbox d-none">
-                                
-                                <label for="buku_<?= $i ?>" class="book-selectable-card w-100">
-                                    <div class="check-badge"><i class="fas fa-check"></i></div>
-                                    
-                                    <div>
-                                        <span class="text-muted text-uppercase fw-bold" style="font-size: 10px; letter-spacing: 0.5px;">
-                                            <?= htmlspecialchars($bk['category'] ?: 'Umum') ?>
-                                        </span>
-                                        <h6 class="fw-bold text-dark my-1 text-truncate-2" style="font-size: 13.5px; line-height: 1.4;">
-                                            <?= htmlspecialchars($bk['judul']) ?>
-                                        </h6>
-                                    </div>
-
-                                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light">
-                                        <span class="text-muted" style="font-size: 11px;">Tersedia</span>
-                                        <span class="badge <?= $badge_color ?> rounded-pill" style="font-size: 10px; padding: 4px 8px;">
-                                            <?= $bk['jumlah'] ?> Eks
-                                        </span>
-                                    </div>
-                                </label>
-                            </div>
-                        <?php 
+                <div id="container-buku">
+                    <div class="d-flex gap-2 mb-2 book-row">
+                        <select name="judul[]" class="form-select" required>
+                            <option value="">-- Pilih Buku --</option>
+                            <?php
+                            $buku = mysqli_query($conn, "SELECT * FROM buku WHERE jumlah > 0 ORDER BY judul ASC");
+                            while($b = mysqli_fetch_array($buku)){
+                                echo "<option value='".htmlspecialchars($b['judul'])."'>".htmlspecialchars($b['judul'])." (Stok: ".$b['jumlah'].")</option>";
                             }
-                        } else {
-                            echo "<div class='col-12'><span class='text-muted small'>Tidak ada koleksi buku yang tersedia atau stok habis.</span></div>";
-                        }
-                        ?>
+                            ?>
+                        </select>
+                        <button type="button" class="btn btn-outline-danger btn-hapus-buku" style="border-radius:12px; width:50px;" disabled>
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </div>
                 </div>
-                <small class="text-muted">Kartu yang berubah warna keunguan menandakan buku tersebut masuk ke daftar pinjam.</small>
+                <small class="text-muted small d-block mt-1">Sistem Otomatis: Denda dikenakan sebesar <b>Rp 1.000 / hari</b> jika durasi pinjam melewati batas 7 hari.</small>
             </div>
 
             <div class="row">
-                <div class="col-md-6 mb-3">
+                <div class="col-md-6 mb-4">
                     <label class="form-label">Tanggal Pinjam</label>
-                    <input type="date" name="tanggal_pinjam" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    <input type="date" name="tgl_pinjam" class="form-control" value="<?= date('Y-m-d') ?>" required>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Tanggal Kembali</label>
-                    <input type="date" name="tanggal_kembali" class="form-control" value="<?= date('Y-m-d', strtotime('+7 days')) ?>" required>
+                <div class="col-md-6 mb-4">
+                    <label class="form-label">Estimasi Tanggal Kembali (7 Hari)</label>
+                    <input type="date" name="tgl_kembali" class="form-control" value="<?= date('Y-m-d', strtotime('+7 days')) ?>" required>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-end gap-2 mt-4 pt-2 border-top border-light">
-                <a href="tampil.php" class="btn btn-light border text-secondary px-4" style="border-radius:10px; font-size: 14px;">Batal</a>
-                <button type="submit" name="simpan" class="btn btn-primary px-4 shadow-sm" style="background:#4f46e5; border-color:#4f46e5; border-radius:10px; font-size: 14px;">
-                    <i class="fas fa-check-circle me-2"></i> Konfirmasi Peminjaman
+            <hr class="my-4" style="opacity: 0.1;">
+
+            <div class="d-grid gap-2">
+                <button type="submit" name="submit" class="btn btn-primary btn-custom" style="background:#4f46e5; border-color:#4f46e5;">
+                    <i class="fas fa-plus-circle me-2"></i> Proses Peminjaman
                 </button>
+                <a href="tampil.php" class="btn btn-light btn-custom">Batal</a>
             </div>
         </form>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-    // Validasi agar admin tidak mengosongkan pilihan buku saat submit
-    document.getElementById('formMultiPeminjaman').addEventListener('submit', function(e) {
-        const pilihanBuku = document.querySelectorAll('input[name="judul_buku[]"]:checked');
-        if (pilihanBuku.length === 0) {
-            e.preventDefault(); 
-            Swal.fire({
-                title: 'Buku Belum Dipilih!',
-                text: 'Harap klik minimal satu atau beberapa kartu buku terlebih dahulu.',
-                icon: 'warning',
-                confirmButtonColor: '#0f57f1',
-                customClass: { popup: 'rounded-4' }
-            });
+    // ENGINE JAVASCRIPT: Tambah / Hapus Dropdown Pilihan Buku secara Dinamis
+    const containerBuku = document.getElementById('container-buku');
+    const btnTambahBuku = document.getElementById('btn-tambah-buku');
+
+    const templateBarisBuku = () => {
+        const selectPertama = containerBuku.querySelector('select').innerHTML;
+        const div = document.createElement('div');
+        div.className = 'd-flex gap-2 mb-2 book-row';
+        div.innerHTML = `
+            <select name="judul[]" class="form-select" required>${selectPertama}</select>
+            <button type="button" class="btn btn-outline-danger btn-hapus-buku" style="border-radius:12px; width:50px;">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        `;
+        return div;
+    };
+
+    btnTambahBuku.addEventListener('click', () => {
+        containerBuku.appendChild(templateBarisBuku());
+        cekStatusTombolHapus();
+    });
+
+    containerBuku.addEventListener('click', (e) => {
+        if(e.target.classList.contains('btn-hapus-buku') || e.target.parentElement.classList.contains('btn-hapus-buku')){
+            const row = e.target.closest('.book-row');
+            row.remove();
+            cekStatusTombolHapus();
         }
     });
+
+    function cekStatusTombolHapus() {
+        const semuaRow = containerBuku.querySelectorAll('.book-row');
+        if(semuaRow.length === 1) {
+            semuaRow[0].querySelector('.btn-hapus-buku').setAttribute('disabled', 'true');
+        } else {
+            semuaRow.forEach(row => row.querySelector('.btn-hapus-buku').removeAttribute('disabled'));
+        }
+    }
+
+    // NOTIFIKASI SWEETALERT JIKA SUBMIT BERHASIL / GAGAL
+    <?php if($notif === 'sukses') { ?>
+        Swal.fire({
+            title: 'Berhasil Disimpan!',
+            text: 'Data peminjaman kelompok buku berhasil dicatat dalam satu baris.',
+            icon: 'success',
+            confirmButtonColor: '#4f46e5',
+            customClass: { popup: 'rounded-4' }
+        }).then(() => { window.location.href = 'tampil.php'; });
+    <?php } elseif($notif === 'gagal') { ?>
+        Swal.fire({
+            title: 'Gagal Menyimpan!',
+            text: 'Terjadi kesalahan pada struktur query database.',
+            icon: 'error',
+            confirmButtonColor: '#ef4444',
+            customClass: { popup: 'rounded-4' }
+        });
+    <?php } ?>
 </script>
 </body>
-</html>
+</html> 
